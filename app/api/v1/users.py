@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
 from app.schemas.user import UserCreate, UserRead
 from app.crud.user import create_user, get_user_by_email
-from app.api.deps import get_db_session
+from app.api.deps import get_db_session, get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -11,7 +13,6 @@ def register_new_user(
     user_registration: UserCreate,
     db_session: Session = Depends(get_db_session)
 ):
-    # Defensive check: Ensure user doesn't already exist before doing work
     existing_user = get_user_by_email(db_session, target_email=user_registration.email)
     if existing_user:
         raise HTTPException(
@@ -27,3 +28,9 @@ def register_new_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
         )
+
+@router.get("/me", response_model=UserRead)
+def read_current_user_profile(
+    current_user: User = Depends(get_current_user)
+):
+    return current_user
